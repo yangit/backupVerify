@@ -97,7 +97,7 @@ const integrityCheck = async ({
     parser.compareCheckedRevisions({ checked: checkedRevisions, all: status.revisions.map(({ number }) => number) });
 
     status.quickCheckOk = true;
-    console.log(`QuickCheck done in ${durationQuickCheck}`);
+    console.log(`QuickCheck done in ${durationQuickCheck}s`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
     return status;
@@ -111,7 +111,7 @@ const integrityCheck = async ({
       }),
     );
     status.filesOk = filesOk;
-    console.log(`Files checked successfully in ${filesOkDuration}`);
+    console.log(`Files checked successfully in ${filesOkDuration}s`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
     return status;
@@ -126,7 +126,7 @@ const integrityCheck = async ({
     );
     status.chunksOk = chunksOk;
 
-    console.log(`Chunks checked successfully in ${chunksOkDuration}`);
+    console.log(`Chunks checked successfully in ${chunksOkDuration}s`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
     return status;
@@ -140,7 +140,7 @@ const integrityCheck = async ({
 
     status.pruningOk = true;
 
-    console.log(`Storage pruned successfully in ${pruningDuration}`);
+    console.log(`Storage pruned successfully in ${pruningDuration}s`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
     return status;
