@@ -12,7 +12,6 @@ const configIn = JSON.parse(stdin);
 const main = async () => {
   try {
     setConfig(configIn);
-    console.log(configIn);
     const manager = instanceManager('integrity');
     const ip = await manager.up();
     console.log('Instance IP is', ip);

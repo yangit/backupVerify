@@ -11,6 +11,6 @@ export default (msg: string) =>
   });
 
 // export default (msg: string) => {
-//     console.log(msg) 
+//     console.log(msg)
 //     return Promise.resolve()
 // }
