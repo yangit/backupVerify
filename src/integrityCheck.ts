@@ -4,11 +4,13 @@ import { RunCommandType, ExecutorType } from './runViaSSH';
 import * as parser from './duplicacyOutputParser';
 import getConfig from './getConfig';
 import sendMessage from './sendMessage';
+import statusToSmallStatus from './statusToSmallStatus';
 
 export interface IntegrityCheckReturn {
   storage: string;
   files?: { count: number; totalSize: number; chunks: number };
   lastRevision?: { number: number; created: moment.Moment };
+  revisionCount?: number;
   revisions?: {
     number: number;
     created: moment.Moment;
@@ -55,6 +57,7 @@ const integrityCheck = async ({
         command: `./${duplicacyBinary} list -storage ${storage}`,
       }),
     ));
+    status.revisionCount = status.revisions.length;
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
     return status;
@@ -87,6 +90,22 @@ const integrityCheck = async ({
   }
 
   try {
+    console.log('Starting pruning');
+    const { durationSec: pruningDuration } = await runCommand({
+      failOnExitCode: true,
+      command: `./${duplicacyBinary} prune -storage ${storage} -keep 0:360 -keep 30:180 -keep 7:30 -keep 1:7 -threads 5`,
+    });
+
+    status.pruningOk = true;
+
+    console.log(`Storage pruned successfully in ${pruningDuration}s`);
+  } catch (error) {
+    status.error = { message: `${error}`, stack: error?.stack };
+    return status;
+  }
+
+  try {
+    console.log('Starting quick check');
     const { checkedRevisions, durationSec: durationQuickCheck } = parser.checkQuick(
       await runCommand({
         failOnExitCode: true,
@@ -104,6 +123,7 @@ const integrityCheck = async ({
   }
 
   try {
+    console.log('Starting file check');
     const { filesOk, durationSec: filesOkDuration } = parser.checkFiles(
       await runCommand({
         failOnExitCode: true,
@@ -118,6 +138,7 @@ const integrityCheck = async ({
   }
 
   try {
+    console.log('Starting chunks check');
     const { chunksOk, durationSec: chunksOkDuration } = parser.checkChunks(
       await runCommand({
         failOnExitCode: true,
@@ -127,20 +148,6 @@ const integrityCheck = async ({
     status.chunksOk = chunksOk;
 
     console.log(`Chunks checked successfully in ${chunksOkDuration}s`);
-  } catch (error) {
-    status.error = { message: `${error}`, stack: error?.stack };
-    return status;
-  }
-
-  try {
-    const { durationSec: pruningDuration } = await runCommand({
-      failOnExitCode: true,
-      command: `./${duplicacyBinary} prune -storage ${storage} -keep 0:360 -keep 30:180 -keep 7:30 -keep 1:7 -threads 5`,
-    });
-
-    status.pruningOk = true;
-
-    console.log(`Storage pruned successfully in ${pruningDuration}s`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
     return status;
@@ -163,7 +170,13 @@ const checkAllIntegrityExecutor: ExecutorType<Record<string, IntegrityCheckRetur
   for (const storage of storageNames) {
     // eslint-disable-next-line no-await-in-loop
     storageStats[storage] = await integrityCheck({ runCommand, storage });
-    sendMessage(JSON.stringify(storageStats[storage], null, '\t'));
+    if (storageStats[storage].error) {
+      console.log(`There was an error in ${storage} report!'`);
+    }
+    const smallReport = statusToSmallStatus(storageStats[storage]);
+    console.log('Small report:', smallReport);
+    // eslint-disable-next-line no-await-in-loop
+    await sendMessage(JSON.stringify(smallReport, null, '\t'));
   }
   return storageStats;
 };

@@ -1,0 +1,1 @@
+scp dist/backupVerify.js nas:~/

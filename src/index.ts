@@ -1,6 +1,7 @@
 import './init';
 import bs58 from 'bs58';
 import fs from 'fs';
+import fp from 'lodash/fp';
 import instanceManager from './instanceManager';
 import { setConfig } from './getConfig';
 import runViaSSH from './runViaSSH';
@@ -13,6 +14,13 @@ const configIn = JSON.parse(bs58.decode(stdin.replace(/\n/g, '')).toString('utf8
 const main = async () => {
   setConfig(configIn);
   const manager = instanceManager('integrity');
+  await sendMessage(
+    `\nStarting backup verify:\n${new Date()}\n${JSON.stringify(
+      configIn.storagesAndSnapshots.map(fp.pick(['storage', 'snapshots'])),
+      null,
+      '\t',
+    )}`,
+  );
   const ip = await manager.up();
   console.log('Instance IP is', ip);
 
@@ -20,8 +28,10 @@ const main = async () => {
     ip,
     executor: integrityCheckExecutor,
   });
-  await sendMessage(JSON.stringify(reports, null, '\t'));
+  // await sendMessage(`\n${JSON.stringify(reports, null, '\t')}`);
+  console.log('Full report', JSON.stringify(reports, null, '\t'));
   await manager.down();
+  await sendMessage('All done');
   console.log('All done');
   process.exit(0);
 };
