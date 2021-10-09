@@ -150,7 +150,8 @@
   "scripts": {
     "dev": "echo \"{\\\"a\\\":1}\" | npx --no-install ts-node src",
     "start": "npx ts-node . ",
-    "test": "jest"
+    "test": "jest",
+    "build": "webpack"
   },
   "author": "",
   "license": "ISC"
