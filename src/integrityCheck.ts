@@ -173,10 +173,9 @@ const checkAllIntegrityExecutor: ExecutorType<Record<string, IntegrityCheckRetur
     if (storageStats[storage].error) {
       console.log(`There was an error in ${storage} report!'`);
     }
-    const smallReport = statusToSmallStatus(storageStats[storage]);
-    console.log('Small report:', smallReport);
+    console.log('Small report:', JSON.stringify(storageStats[storage], null, '\t'));
     // eslint-disable-next-line no-await-in-loop
-    await sendMessage(JSON.stringify(smallReport, null, '\t'));
+    await sendMessage(JSON.stringify(statusToSmallStatus(storageStats[storage]), null, '\t'));
   }
   return storageStats;
 };
