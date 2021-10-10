@@ -11,6 +11,7 @@ console.log(
         name,
         id,
         storage,
+        copyFrom,
         keys: { password, b2_id, b2_key, dropbox_token },
       } = conf;
       const envVars: string[] = [];
@@ -26,12 +27,17 @@ console.log(
       if (password) {
         envVars.push(`DUPLICACY_${name.toUpperCase()}_PASSWORD=${password}`);
       }
-      return {
-        ...conf,
-        initCommand: `${envVars.join(
-          ' ',
-        )} duplicacy init -encrypt -storage-name ${name} -repository ~/duplicacyRestore/dummyInit -pref-dir ~/duplicacyRestore ${id} ${storage}`,
-      };
+      const initCommand = `${envVars.join(
+        ' ',
+      )} duplicacy init -encrypt -storage-name ${name} -repository ~/duplicacyRestore/dummyInit -pref-dir ~/duplicacyRestore ${id} ${storage}`;
+      const addCopyCommand = `${envVars.join(
+        ' ',
+      )} duplicacy add -bit-identical -encrypt -repository ~/duplicacyRestore/dummyInit -copy ${copyFrom} ${name} ${id} ${storage}`;
+      const result = { ...conf, initCommand };
+      if (copyFrom) {
+        result.addCopyCommand = addCopyCommand;
+      }
+      return result;
     }),
     null,
     '\t',

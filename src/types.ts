@@ -18,6 +18,7 @@ export interface ConfigRawType {
       dropbox_token: string;
       password: string;
     };
+    copyFrom?: string;
     snapshots: string[];
   }[];
 }
@@ -30,11 +31,12 @@ export interface DuplicacyConfigType {
   name: string;
   id: string;
   storage: string;
+  copyFrom?: string;
+  addCopyCommand?: string;
   keys: {
     b2_id?: string;
     b2_key?: string;
     dropbox_token?: string;
-
     password: string;
   };
   repository: string;
