@@ -1,4 +1,4 @@
-import { ConfigType } from './getConfig';
+import { ConfigType } from './types';
 
 export default (config: ConfigType) => {
   const installDuplicacy = `

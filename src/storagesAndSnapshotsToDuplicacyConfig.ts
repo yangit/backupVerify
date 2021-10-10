@@ -1,4 +1,5 @@
 import fp from 'lodash/fp';
+import { ConfigRawType, DuplicacyConfigType } from './types';
 
 // EXAMPLE
 // const storagesAndSnapshots = [
@@ -32,14 +33,21 @@ const defaultConfig = {
   exclude_by_attribute: false,
 };
 
-export default fp.flow([
-  fp.flatMap(({ snapshots, storage, ...rest }) =>
-    snapshots.map((snapshot: string) => ({
-      ...defaultConfig,
-      ...rest,
-      id: snapshot,
-      storage,
-      name: `${storage}/${snapshot}`.replace(/[^a-zA-Z\d]/g, '_'),
-    })),
-  ),
-]);
+export default (rawConfig: ConfigRawType): DuplicacyConfigType[] => {
+  const { storagesAndSnapshots, repositoryBase } = rawConfig;
+  return fp.flow([
+    fp.flatMap(({ snapshots, storage, ...rest }) =>
+      snapshots.map((snapshot: string) => {
+        const name = `${storage}/${snapshot}`.replace(/[^a-zA-Z\d]/g, '_');
+        return {
+          ...defaultConfig,
+          ...rest,
+          id: snapshot,
+          storage,
+          name,
+          repository: `${repositoryBase}/${name}`,
+        };
+      }),
+    ),
+  ])(storagesAndSnapshots);
+};

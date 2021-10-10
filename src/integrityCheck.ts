@@ -4,7 +4,13 @@ import { RunCommandType, ExecutorType } from './runViaSSH';
 import * as parser from './duplicacyOutputParser';
 import getConfig from './getConfig';
 import sendMessage from './sendMessage';
-import statusToSmallStatus from './statusToSmallStatus';
+
+const statusToSmallStatus = (report: IntegrityCheckReturn) => {
+  return {
+    ...fp.omit('revisions')(report),
+    error: report.error ? { stack: report.error.stack, message: report.error.message.slice(0, 2000) } : null,
+  };
+};
 
 export interface IntegrityCheckReturn {
   storage: string;
@@ -60,6 +66,7 @@ const integrityCheck = async ({
     status.revisionCount = status.revisions.length;
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
+    status.durationSec = moment().diff(start, 'seconds');
     return status;
   }
 
@@ -71,6 +78,7 @@ const integrityCheck = async ({
     }
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
+    status.durationSec = moment().diff(start, 'seconds');
     return status;
   }
 
@@ -86,6 +94,7 @@ const integrityCheck = async ({
     console.log(`Files: ${JSON.stringify(status.files)}`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
+    status.durationSec = moment().diff(start, 'seconds');
     return status;
   }
 
@@ -101,6 +110,7 @@ const integrityCheck = async ({
     console.log(`Storage pruned successfully in ${pruningDuration}s`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
+    status.durationSec = moment().diff(start, 'seconds');
     return status;
   }
 
@@ -119,6 +129,7 @@ const integrityCheck = async ({
     console.log(`QuickCheck done in ${durationQuickCheck}s`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
+    status.durationSec = moment().diff(start, 'seconds');
     return status;
   }
 
@@ -134,6 +145,7 @@ const integrityCheck = async ({
     console.log(`Files checked successfully in ${filesOkDuration}s`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
+    status.durationSec = moment().diff(start, 'seconds');
     return status;
   }
 
@@ -150,6 +162,7 @@ const integrityCheck = async ({
     console.log(`Chunks checked successfully in ${chunksOkDuration}s`);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
+    status.durationSec = moment().diff(start, 'seconds');
     return status;
   }
 
