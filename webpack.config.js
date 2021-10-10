@@ -3,12 +3,16 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
   mode: 'production',
-  entry: './src/index.ts',
-  target: 'node',
-  output: {
-    filename: 'backupVerify.js', // [name] will take whatever the input filename is. defaults to 'main' if only a single entry value
-    path: path.resolve(__dirname, 'dist'), // the folder containing you final dist/build files. Default to './dist'
+  entry: {
+    backupVerify: './src/backupVerify.ts',
+    copySnapshots: './src/copySnapshots.ts',
+    makeConfig: './src/makeConfig.ts',
   },
+  output: {
+    path: path.join(__dirname, './dist'),
+    filename: '[name].js',
+  },
+  target: 'node',
   resolve: {
     modules: ['node_modules'],
     extensions: ['.tsx', '.ts', '.mjs', '.js'],

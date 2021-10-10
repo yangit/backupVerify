@@ -1,3 +1,13 @@
+export interface StorageAndSnapshot {
+  storage: string;
+  keys: {
+    dropbox_token: string;
+    password: string;
+  };
+  copyFrom?: string;
+  snapshots: string[];
+}
+
 export interface ConfigRawType {
   repositoryBase: string;
   duplicacyBinary: string;
@@ -12,15 +22,7 @@ export interface ConfigRawType {
     type: string;
     image: string;
   };
-  storagesAndSnapshots: {
-    storage: string;
-    keys: {
-      dropbox_token: string;
-      password: string;
-    };
-    copyFrom?: string;
-    snapshots: string[];
-  }[];
+  storagesAndSnapshots: StorageAndSnapshot[];
 }
 
 export interface ConfigType extends ConfigRawType {
