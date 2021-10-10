@@ -31,7 +31,10 @@ export interface DuplicacyConfigType {
   id: string;
   storage: string;
   keys: {
-    dropbox_token: string;
+    b2_id?: string;
+    b2_key?: string;
+    dropbox_token?: string;
+
     password: string;
   };
   repository: string;

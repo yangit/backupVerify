@@ -25,7 +25,7 @@ const defaultConfig = {
   // },
   repository: '',
   encrypted: true,
-  no_backup: true,
+  no_backup: false,
   no_restore: false,
   no_save_password: false,
   nobackup_file: '',
