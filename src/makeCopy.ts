@@ -45,7 +45,7 @@ const makeCopy = async ({
   try {
     await runCommand({
       failOnExitCode: true,
-      command: `./${duplicacyBinary} copy -threads 5 -from ${copyFrom} -to ${name} -id ${id}`,
+      command: `./${duplicacyBinary} copy -threads 5 -from ${copyFrom} -to ${name} -id ${id} | tee ~/duplicacy.log`,
     });
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };

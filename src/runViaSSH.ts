@@ -73,11 +73,18 @@ const runViaSSH = async <T>({
         executor(getRunCommand({ client, onUpdate })).then(resolve, reject);
       })
       .on('error', reject)
+      .on('timeout', (event: any) => {
+        console.log('If you See THIS the SSH connection TIMEEDOUT and there is no handler for it YAN!', event);
+      })
+      // .on('end', (event: any) => {
+      //   console.log('If you See THIS the SSH connection ENDED and there is no handler for it YAN!', event);
+      // })
       .connect({
         host: ip,
         port: 22,
         username: 'root',
         privateKey: sshPrivateKey,
+        keepaliveInterval: 10 * 1000,
       });
   });
 };

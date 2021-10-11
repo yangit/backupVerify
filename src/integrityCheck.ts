@@ -60,7 +60,7 @@ const integrityCheck = async ({
     ({ revisions: status.revisions } = parser.list(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} list -storage ${storage}`,
+        command: `./${duplicacyBinary} list -storage ${storage} | tee ~/duplicacy.log`,
       }),
     ));
     status.revisionCount = status.revisions.length;
@@ -87,7 +87,7 @@ const integrityCheck = async ({
     ({ files: status.files } = parser.listFiles(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} list -storage ${storage} -r ${status.lastRevision.number} -files`,
+        command: `./${duplicacyBinary} list -storage ${storage} -r ${status.lastRevision.number} -files | tee ~/duplicacy.log`,
       }),
     ));
     status.listOk = true;
@@ -102,7 +102,7 @@ const integrityCheck = async ({
     console.log('Starting pruning');
     const { durationSec: pruningDuration } = await runCommand({
       failOnExitCode: true,
-      command: `./${duplicacyBinary} prune -storage ${storage} -keep 0:360 -keep 30:180 -keep 7:30 -keep 1:7 -threads 5`,
+      command: `./${duplicacyBinary} prune -storage ${storage} -keep 0:360 -keep 30:180 -keep 7:30 -keep 1:7 -threads 5 | tee ~/duplicacy.log`,
     });
 
     status.pruningOk = true;
@@ -119,7 +119,7 @@ const integrityCheck = async ({
     const { checkedRevisions, durationSec: durationQuickCheck } = parser.checkQuick(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} check -storage ${storage} -threads 5`,
+        command: `./${duplicacyBinary} check -storage ${storage} -threads 5 | tee ~/duplicacy.log`,
       }),
     );
 
@@ -138,7 +138,7 @@ const integrityCheck = async ({
     const { filesOk, durationSec: filesOkDuration } = parser.checkFiles(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} check -storage ${storage} -r ${status.lastRevision.number} -files -threads 5`,
+        command: `./${duplicacyBinary} check -storage ${storage} -r ${status.lastRevision.number} -files -threads 5 | tee ~/duplicacy.log`,
       }),
     );
     status.filesOk = filesOk;
@@ -154,7 +154,7 @@ const integrityCheck = async ({
     const { chunksOk, durationSec: chunksOkDuration } = parser.checkChunks(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} check -storage ${storage} -chunks -threads 5`,
+        command: `./${duplicacyBinary} check -storage ${storage} -chunks -threads 5 | tee ~/duplicacy.log`,
       }),
     );
     status.chunksOk = chunksOk;
