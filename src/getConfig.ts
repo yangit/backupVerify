@@ -10,10 +10,12 @@ export default new Promise<ConfigType>((resolveLocal) => {
   return config;
 });
 export const setConfig = (configRaw: ConfigRawType) => {
-  const { storagesAndSnapshots, ...rest } = configRaw;
+  const { storagesAndSnapshots, duplicacyBinary, ...rest } = configRaw;
   resolve({
     ...rest,
+    duplicacyBinary,
     duplicacyConfig: storagesAndSnapshotsToDuplicacyConfig(configRaw),
+    duplicacyVersion: duplicacyBinary.split('_').reverse()[0],
     storagesAndSnapshots,
   });
 };

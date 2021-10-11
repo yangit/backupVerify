@@ -26,6 +26,7 @@ export interface ConfigRawType {
 }
 
 export interface ConfigType extends ConfigRawType {
+  duplicacyVersion: string;
   duplicacyConfig: DuplicacyConfigType[];
 }
 
