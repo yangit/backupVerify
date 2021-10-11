@@ -14,6 +14,7 @@ export interface ConfigRawType {
   sshPrivateKey: string;
   sshPublicKey: string;
   linodeToken: string;
+  threads: number;
   instance: {
     root_pass: string;
     region: string;

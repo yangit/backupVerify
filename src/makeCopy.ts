@@ -30,7 +30,7 @@ const makeCopy = async ({
   runCommand: RunCommandType;
   duplicacyConfig: DuplicacyConfigType;
 }): Promise<MakeCopyReturn> => {
-  const { duplicacyBinary } = await getConfig;
+  const { duplicacyBinary, threads } = await getConfig;
   const start = moment();
   const status: MakeCopyReturn = {
     from: duplicacyConfig.copyFrom,
@@ -45,7 +45,7 @@ const makeCopy = async ({
   try {
     await runCommand({
       failOnExitCode: true,
-      command: `./${duplicacyBinary} copy -threads 5 -from ${copyFrom} -to ${name} -id ${id} | tee ~/duplicacy.log`,
+      command: `./${duplicacyBinary} copy -threads ${threads} -from ${copyFrom} -to ${name} -id ${id} | tee ~/duplicacy.log`,
     });
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
