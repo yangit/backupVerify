@@ -30,8 +30,9 @@ const main = async (configIn: ConfigRawType) => {
   // await sendMessage(`\n${JSON.stringify(reports, null, '\t')}`);
   console.log('Full report', JSON.stringify(reports, null, '\t'));
   await manager.down();
-  await sendMessage('All done');
-  console.log('All done');
+  const message = 'Copy snapshots done';
+  await sendMessage(message);
+  console.log(message);
   process.exit(0);
 };
 

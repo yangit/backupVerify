@@ -43,10 +43,11 @@ const makeCopy = async ({
   console.log(`Copy storage from ${copyFrom} to ${name} snapshot ${id}`);
 
   try {
-    await runCommand({
+    const copyResult = await runCommand({
       failOnExitCode: true,
       command: `./${duplicacyBinary} copy -threads ${threads} -from ${copyFrom} -to ${name} -id ${id} | tee ~/duplicacy.log`,
     });
+    console.log(copyResult);
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
     status.durationSec = moment().diff(start, 'seconds');
