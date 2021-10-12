@@ -31,8 +31,9 @@ const main = async () => {
   // await sendMessage(`\n${JSON.stringify(reports, null, '\t')}`);
   console.log('Full report', JSON.stringify(reports, null, '\t'));
   await manager.down();
-  await sendMessage('All done');
-  console.log('All done');
+  const message = 'Backup verification done';
+  await sendMessage(message);
+  console.log(message);
   process.exit(0);
 };
 

@@ -7,6 +7,7 @@ module.exports = {
     backupVerify: './src/backupVerify.ts',
     copySnapshots: './src/copySnapshots.ts',
     makeConfig: './src/makeConfig.ts',
+    checkDates: './src/checkDates.ts',
   },
   output: {
     path: path.join(__dirname, './dist'),
