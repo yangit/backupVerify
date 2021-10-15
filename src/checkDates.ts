@@ -19,13 +19,15 @@ const main = async () => {
   const { duplicacyConfig } = await getConfig;
   const stdouts = await Promise.all(
     duplicacyConfig.map(async (conf: DuplicacyConfigType) =>
-      execa(`${userHomeDir}/.config/bin/duplicacy`, `cat -storage ${conf.name} .date`.split(' ')).catch((err) => err),
+      execa(`${userHomeDir}/.config/bin/duplicacy`, `cat -storage ${conf.name} .date`.split(' ')).catch(
+        (err: execa.ExecaReturnValue) => err,
+      ),
     ),
   );
   const now = moment();
   const results = stdouts.map((result, index) => {
     const textDate = result.stdout.split('\n').reverse()[0];
-    const diff = moment(new Date(textDate)).diff(now, 'hour');
+    const diff = moment(new Date(textDate)).diff(now, 'days');
     return `${duplicacyConfig[index].name}: ${result.failed ? false : diff}`;
   });
 

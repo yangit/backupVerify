@@ -6,7 +6,7 @@ let resolve: (config: ConfigType) => void;
 export default new Promise<ConfigType>((resolveLocal) => {
   resolve = resolveLocal;
 }).then((config) => {
-  console.log('Got config, starting!');
+  console.log(`${new Date().toISOString()}: Got config, starting!`);
   return config;
 });
 export const setConfig = (configRaw: ConfigRawType) => {

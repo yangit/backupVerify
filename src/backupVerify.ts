@@ -7,38 +7,43 @@ import { setConfig } from './getConfig';
 import runViaSSH from './runViaSSH';
 import sendMessage from './sendMessage';
 import integrityCheckExecutor from './integrityCheck';
+import { ConfigRawType, IntegrityCheckReturn } from './types';
 
-const stdin = fs.readFileSync(0).toString(); // STDIN_FILENO = 0
-const configIn = JSON.parse(bs58.decode(stdin.replace(/\n/g, '')).toString('utf8'));
+const logFile = 'backupVerifyDetail.log';
 
-const main = async () => {
+const main = async (configIn: ConfigRawType) => {
   setConfig(configIn);
   const manager = instanceManager('integrity');
-  await sendMessage(
-    `\nStarting backup verify:\n${new Date()}\n${JSON.stringify(
-      configIn.storagesAndSnapshots.map(fp.pick(['storage', 'snapshots'])),
-      null,
-      '\t',
-    )}`,
-  );
   const ip = await manager.up();
   console.log('Instance IP is', ip);
-
   const reports = await runViaSSH({
+    logFile,
     ip,
     executor: integrityCheckExecutor,
   });
   // await sendMessage(`\n${JSON.stringify(reports, null, '\t')}`);
   console.log('Full report', JSON.stringify(reports, null, '\t'));
+  await sendMessage(
+    `Backup verification done\n ${JSON.stringify(
+      fp.mapValues((report: IntegrityCheckReturn) => report.allOk)(reports),
+      null,
+      '\t',
+    )}`,
+  );
   await manager.down();
-  const message = 'Backup verification done';
-  await sendMessage(message);
-  console.log(message);
   process.exit(0);
 };
 
-main().catch(async (err) => {
-  console.log(err);
-  await sendMessage('BackupVerify error. Please check logs');
+const stdin = fs.readFileSync(0).toString(); // STDIN_FILENO = 0
+const maybeJson = bs58.decode(stdin.replace(/\n/g, '')).toString('utf8');
+try {
+  const configIn = JSON.parse(maybeJson);
+  main(configIn).catch(async (err) => {
+    console.log(err);
+    await sendMessage('Backup verify error. Please check logs');
+    process.exit(1);
+  });
+} catch (err) {
+  console.log('could not parse JSON', maybeJson);
   process.exit(1);
-});
+}

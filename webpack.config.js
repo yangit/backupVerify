@@ -9,6 +9,7 @@ module.exports = {
     makeConfig: './src/makeConfig.ts',
     checkDates: './src/checkDates.ts',
   },
+  devtool: 'source-map',
   output: {
     path: path.join(__dirname, './dist'),
     filename: '[name].js',

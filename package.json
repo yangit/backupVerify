@@ -119,6 +119,7 @@
     "sequelize": "5.21.13",
     "serve": "11.3.0",
     "server-timing": "3.2.1",
+    "source-map-support": "^0.5.20",
     "ssh2": "^0.8.9",
     "style-loader": "1.1.4",
     "terser-webpack-plugin": "2.3.5",

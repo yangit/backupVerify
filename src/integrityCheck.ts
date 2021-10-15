@@ -4,35 +4,8 @@ import { RunCommandType, ExecutorType } from './runViaSSH';
 import * as parser from './duplicacyOutputParser';
 import getConfig from './getConfig';
 import sendMessage from './sendMessage';
-
-const statusToSmallStatus = (report: IntegrityCheckReturn) => {
-  return {
-    ...fp.omit('revisions')(report),
-    error: report.error ? { stack: report.error.stack, message: report.error.message.slice(0, 2000) } : null,
-  };
-};
-
-export interface IntegrityCheckReturn {
-  storage: string;
-  files?: { count: number; totalSize: number; chunks: number };
-  lastRevision?: { number: number; created: moment.Moment };
-  revisionCount?: number;
-  revisions?: {
-    number: number;
-    created: moment.Moment;
-  }[];
-  listOk: boolean;
-  quickCheckOk: boolean;
-  chunksOk: boolean;
-  filesOk: boolean;
-  pruningOk: boolean;
-  allOk: boolean;
-  durationSec: number;
-  error?: {
-    stack: string;
-    message: string;
-  };
-}
+import { IntegrityCheckReturn } from './types';
+import statusToSmallStatus from './statusToSmallStatus';
 
 const integrityCheck = async ({
   runCommand,
@@ -60,7 +33,8 @@ const integrityCheck = async ({
     ({ revisions: status.revisions } = parser.list(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} list -storage ${storage} 2>&1 | tee ~/duplicacy.log`,
+        failOnStdErr: true,
+        command: `./${duplicacyBinary} list -storage ${storage}`,
       }),
     ));
     status.revisionCount = status.revisions.length;
@@ -87,7 +61,8 @@ const integrityCheck = async ({
     ({ files: status.files } = parser.listFiles(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} list -storage ${storage} -r ${status.lastRevision.number} -files 2>&1 | tee ~/duplicacy.log`,
+        failOnStdErr: true,
+        command: `./${duplicacyBinary} list -storage ${storage} -r ${status.lastRevision.number} -files`,
       }),
     ));
     status.listOk = true;
@@ -102,7 +77,8 @@ const integrityCheck = async ({
     console.log('Starting pruning');
     const { durationSec: pruningDuration } = await runCommand({
       failOnExitCode: true,
-      command: `./${duplicacyBinary} prune -storage ${storage} -keep 0:360 -keep 30:180 -keep 7:30 -keep 1:7 -threads ${threads} 2>&1 | tee ~/duplicacy.log`,
+      failOnStdErr: true,
+      command: `./${duplicacyBinary} prune -storage ${storage} -keep 0:360 -keep 30:180 -keep 7:30 -keep 1:7 -threads ${threads}`,
     });
 
     status.pruningOk = true;
@@ -119,7 +95,8 @@ const integrityCheck = async ({
     const { checkedRevisions, durationSec: durationQuickCheck } = parser.checkQuick(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} check -storage ${storage} -threads ${threads} 2>&1 | tee ~/duplicacy.log`,
+        failOnStdErr: true,
+        command: `./${duplicacyBinary} check -storage ${storage} -threads ${threads}`,
       }),
     );
 
@@ -138,7 +115,8 @@ const integrityCheck = async ({
     const { filesOk, durationSec: filesOkDuration } = parser.checkFiles(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} check -storage ${storage} -r ${status.lastRevision.number} -files -threads ${threads} 2>&1 | tee ~/duplicacy.log`,
+        failOnStdErr: true,
+        command: `./${duplicacyBinary} check -storage ${storage} -r ${status.lastRevision.number} -files -threads ${threads}`,
       }),
     );
     status.filesOk = filesOk;
@@ -154,7 +132,8 @@ const integrityCheck = async ({
     const { chunksOk, durationSec: chunksOkDuration } = parser.checkChunks(
       await runCommand({
         failOnExitCode: true,
-        command: `./${duplicacyBinary} check -storage ${storage} -chunks -threads ${threads} 2>&1 | tee ~/duplicacy.log`,
+        failOnStdErr: true,
+        command: `./${duplicacyBinary} check -storage ${storage} -chunks -threads ${threads}`,
       }),
     );
     status.chunksOk = chunksOk;
@@ -178,6 +157,8 @@ const checkAllIntegrityExecutor: ExecutorType<Record<string, IntegrityCheckRetur
 ): Promise<IntegrityExecutorReturnType> => {
   const { duplicacyConfig } = await getConfig;
   const storageNames = duplicacyConfig.map(({ name }) => name);
+  await sendMessage(`\nStarting backup verify:\n${new Date()}\n${JSON.stringify(storageNames, null, '\t')}`);
+
   const storageStats: Record<string, IntegrityCheckReturn> = {};
   // eslint-disable-next-line no-restricted-syntax
   for (const storage of storageNames) {

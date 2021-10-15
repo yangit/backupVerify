@@ -1,38 +1,28 @@
 import './init';
 import bs58 from 'bs58';
 import fs from 'fs';
-import fp from 'lodash/fp';
 import instanceManager from './instanceManager';
 import { setConfig } from './getConfig';
 import runViaSSH from './runViaSSH';
 import sendMessage from './sendMessage';
 import makeCopy from './makeCopy';
-import { ConfigRawType, StorageAndSnapshot } from './types';
+import { ConfigRawType } from './types';
 
+const logFile = 'copySnapshotsDetail.log';
 const main = async (configIn: ConfigRawType) => {
   setConfig(configIn);
   const manager = instanceManager('copy');
-  await sendMessage(
-    `\nStarting backup copy:\n${new Date()}\n${JSON.stringify(
-      configIn.storagesAndSnapshots
-        .filter((v: StorageAndSnapshot) => v.copyFrom)
-        .map(fp.pick(['storage', 'snapshots', 'copyFrom'])),
-      null,
-      '\t',
-    )}`,
-  );
   const ip = await manager.up();
   console.log('Instance IP is', ip);
   const reports = await runViaSSH({
+    logFile,
     ip,
     executor: makeCopy,
   });
-  // await sendMessage(`\n${JSON.stringify(reports, null, '\t')}`);
+
   console.log('Full report', JSON.stringify(reports, null, '\t'));
+  await sendMessage(`Copy all snapshots done \n ${JSON.stringify(reports, null, '\t')}`);
   await manager.down();
-  const message = 'Copy snapshots done';
-  await sendMessage(message);
-  console.log(message);
   process.exit(0);
 };
 

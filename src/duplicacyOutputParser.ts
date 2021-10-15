@@ -9,6 +9,9 @@ const match = {
   checkQuick: /All chunks referenced by snapshot [^\s]+ at revision (\d+) exist/g,
   checkFiles: /\nAll files in snapshot [^\s]+ at revision \d+ have been successfully verified\n/,
   checkChunks: /All \d+ chunks have been successfully verified/,
+  copySnapshots: /^Nothing to copy, all snapshot revisions exist at the destination.$/,
+  copySnapshotsNewStart: /\nChunks to copy: (\d+), to skip: (\d+), total: (\d+)\n/,
+  copySnapshotsNewDone: /\nCopied (\d+) new chunks and skipped (\d+) existing chunks\n/,
 };
 
 export const list = ({ stdout }: RunCommandReturnRaw) => ({
@@ -20,6 +23,7 @@ export const list = ({ stdout }: RunCommandReturnRaw) => ({
 
 export const jsonWrite = (params: RunCommandReturnRaw) => {
   fs.writeFileSync(`${new Date().toISOString()}.json`, JSON.stringify(params, null, '\t'));
+  return params;
 };
 
 export const listFiles = ({
@@ -64,4 +68,16 @@ export const compareCheckedRevisions = ({ checked, all }: { checked: number[]; a
     throw new Error(`Not all revisions passed quick check\n${JSON.stringify({ checked, all })}`);
   }
   return result;
+};
+
+export const copySnapshots = ({ stdout, durationSec }: RunCommandReturnRaw): { copyOk: true; durationSec: number } => {
+  const resultExists = match.copySnapshots.test(stdout.split('\n').reverse()[1]);
+  const [, shouldCopy, wereTotal] = stdout.match(match.copySnapshotsNewStart) || [0, 0, 0];
+  const [, actualCopy, isTotal] = stdout.match(match.copySnapshotsNewDone) || [0, 0, 0];
+  const newResultIsOk = shouldCopy === actualCopy && wereTotal === isTotal && wereTotal !== 0 && shouldCopy !== 0;
+  if (!resultExists && !newResultIsOk) {
+    throw new Error('Copy snapshots failed when trying to parse output, odd');
+  }
+
+  return { copyOk: true, durationSec };
 };

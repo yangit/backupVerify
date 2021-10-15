@@ -1,9 +1,10 @@
-// import fp from 'lodash/fp';
+import fp from 'lodash/fp';
 import moment from 'moment';
 import { RunCommandType, ExecutorType } from './runViaSSH';
 import getConfig from './getConfig';
 import sendMessage from './sendMessage';
-import { DuplicacyConfigType } from './types';
+import * as parser from './duplicacyOutputParser';
+import { DuplicacyConfigType, StorageAndSnapshot } from './types';
 
 const statusToSmallStatus = (report: MakeCopyReturn) => {
   return {
@@ -16,6 +17,7 @@ export interface MakeCopyReturn {
   from?: string;
   to: string;
   allOk: boolean;
+  copyOk: boolean;
   durationSec: number;
   error?: {
     stack: string;
@@ -36,6 +38,7 @@ const makeCopy = async ({
     from: duplicacyConfig.copyFrom,
     to: duplicacyConfig.name,
     allOk: false,
+    copyOk: false,
     durationSec: 0,
   };
   const { name, id, copyFrom } = duplicacyConfig;
@@ -43,11 +46,13 @@ const makeCopy = async ({
   console.log(`Copy storage from ${copyFrom} to ${name} snapshot ${id}`);
 
   try {
-    const copyResult = await runCommand({
-      failOnExitCode: true,
-      command: `./${duplicacyBinary} copy -threads ${threads} -from ${copyFrom} -to ${name} -id ${id} | tee ~/duplicacy.log`,
-    });
-    console.log(copyResult);
+    ({ copyOk: status.copyOk, durationSec: status.durationSec } = parser.copySnapshots(
+      await runCommand({
+        failOnExitCode: true,
+        failOnStdErr: true,
+        command: `./${duplicacyBinary} copy -threads ${threads} -from ${copyFrom} -to ${name} -id ${id}`,
+      }),
+    ));
   } catch (error) {
     status.error = { message: `${error}`, stack: error?.stack };
     status.durationSec = moment().diff(start, 'seconds');
@@ -64,8 +69,17 @@ export type MakeCopyExecutorReturnType = Record<string, MakeCopyReturn>;
 const checkAllIntegrityExecutor: ExecutorType<Record<string, MakeCopyReturn>> = async (
   runCommand: RunCommandType,
 ): Promise<MakeCopyExecutorReturnType> => {
-  const { duplicacyConfig } = await getConfig;
+  const { duplicacyConfig, storagesAndSnapshots } = await getConfig;
   const duplicacyConfigs = duplicacyConfig.filter((v) => v.copyFrom);
+  await sendMessage(
+    `\nStarting backup copy:\n${new Date()}\n${JSON.stringify(
+      storagesAndSnapshots
+        .filter((v: StorageAndSnapshot) => v.copyFrom)
+        .map(fp.pick(['storage', 'snapshots', 'copyFrom'])),
+      null,
+      '\t',
+    )}`,
+  );
   const storageStats: Record<string, MakeCopyReturn> = {};
   // eslint-disable-next-line no-restricted-syntax
   for (const duplicacyConfigSingle of duplicacyConfigs) {

@@ -6,9 +6,9 @@ export default async (ip: string) => {
   const config = await getConfig;
   const { installDuplicacy, initDuplicacyConfig } = scripts(config);
   const executor: ExecutorType<true> = async (runCommand: RunCommandType) => {
-    await runCommand({ failOnExitCode: true, command: installDuplicacy });
+    await runCommand({ failOnExitCode: true, failOnStdErr: false, command: installDuplicacy });
     console.log('Duplicacy installed');
-    await runCommand({ failOnExitCode: true, command: initDuplicacyConfig });
+    await runCommand({ failOnExitCode: true, failOnStdErr: true, command: initDuplicacyConfig });
     console.log('Duplicacy configured');
     return true;
   };

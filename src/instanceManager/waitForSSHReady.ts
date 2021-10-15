@@ -7,7 +7,8 @@ export default async (ip: string) => {
       // eslint-disable-next-line no-await-in-loop
       await runViaSSH({
         ip,
-        executor: (runCommand: RunCommandType) => runCommand({ command: 'echo 1', failOnExitCode: true }),
+        executor: (runCommand: RunCommandType) =>
+          runCommand({ command: 'echo 1', failOnExitCode: true, failOnStdErr: true }),
       }).then(
         () => true,
         () => false,

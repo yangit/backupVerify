@@ -1,14 +1,33 @@
 import { Client as SSHClient } from 'ssh2';
 import moment from 'moment';
+import fs from 'fs';
 import getConfig from './getConfig';
 
 const getRunCommand =
-  ({ client, onUpdate: onUpdateGlobal }: { client: SSHClient; onUpdate: OnUpdateType }) =>
-  async ({ command, failOnExitCode = true, onUpdate: onUpdateLocal }: RunCommandParams): RunCommandReturn =>
+  ({ client, onUpdate: onUpdateGlobal, logFile }: { client: SSHClient; onUpdate: OnUpdateType; logFile?: string }) =>
+  async ({
+    command,
+    failOnExitCode = true,
+    failOnStdErr = true,
+    onUpdate: onUpdateLocal,
+  }: RunCommandParams): RunCommandReturn =>
     new Promise((resolve, reject) => {
+      let logStream: fs.WriteStream | undefined;
+
       const onUpdate = onUpdateLocal || onUpdateGlobal;
       const start = moment();
-      const result = { exitCode: -1, stdout: '', stderr: '', command, durationSec: 0 };
+      const result = {
+        exitCode: -1,
+        stdout: '',
+        stderr: '',
+        stdMix: `CMD: ${new Date().toISOString()}: ${command}\n`,
+        command,
+        durationSec: 0,
+      };
+      if (logFile) {
+        logStream = fs.createWriteStream(logFile, { flags: 'a' });
+        logStream?.write(result.stdMix);
+      }
       client.exec(command, (err: any, stream: any): void => {
         if (err) {
           reject(err);
@@ -19,12 +38,21 @@ const getRunCommand =
         stream
           .on('close', (code: number): void => {
             result.durationSec = moment().diff(start, 'seconds');
+            logStream?.end();
             if (code !== 0 && failOnExitCode) {
-              reject(
-                new Error(
-                  `SSH command failed with exit code ${code}:\n${command}\n${JSON.stringify(result, null, '\t')}`,
-                ),
+              const errLocal = new Error(
+                `runCommand failed beacuse exit code ${code}:\n${command}\n${JSON.stringify(result, null, '\t')}`,
               );
+              Object.assign(errLocal, result);
+              reject(errLocal);
+              return;
+            }
+            if (failOnStdErr && result.stderr.length) {
+              const errLocal = new Error(
+                `runCommand failed beacuse STDERR:\n${command}\n${JSON.stringify(result, null, '\t')}`,
+              );
+              Object.assign(errLocal, result);
+              reject(errLocal);
               return;
             }
             result.exitCode = code;
@@ -33,11 +61,17 @@ const getRunCommand =
           .on('data', (string: string) => {
             onUpdate(string.toString());
             result.stdout += string.toString();
+            const logFileLine = `STDOUT: ${new Date().toISOString()}: ${string.toString()}`;
+            result.stdMix += logFileLine;
+            logStream?.write(logFileLine);
           })
           .on('error', reject)
           .stderr.on('data', (string: string) => {
             onUpdate(string.toString());
             result.stderr += string.toString();
+            const logFileLine = `STDERR: ${new Date().toISOString()}: ${string.toString()}`;
+            result.stdMix += logFileLine;
+            logStream?.write(logFileLine);
           });
       });
     });
@@ -45,10 +79,17 @@ const getRunCommand =
 export type OnUpdateType = (str: string | Buffer) => void;
 
 export type RunCommandReturn = Promise<RunCommandReturnRaw>;
-export type RunCommandReturnRaw = { stdout: string; stderr: string; exitCode: number; durationSec: number };
+export type RunCommandReturnRaw = {
+  stdout: string;
+  stderr: string;
+  stdMix: string;
+  exitCode: number;
+  durationSec: number;
+};
 export type RunCommandParams = {
   command: string;
   failOnExitCode: boolean;
+  failOnStdErr: boolean;
   onUpdate?: OnUpdateType;
 };
 export type RunCommandType = (params: RunCommandParams) => RunCommandReturn;
@@ -58,19 +99,25 @@ export type ExecutorType<T> = (runCommand: RunCommandType) => Promise<T>;
 const runViaSSH = async <T>({
   ip,
   executor,
+  logFile,
   onUpdate = () => {},
 }: {
   ip: string;
+  logFile?: string;
   onUpdate?: OnUpdateType;
   executor: ExecutorType<T>;
 }): Promise<T> => {
   const { sshPrivateKey } = await getConfig;
+  if (logFile) {
+    console.log(`given logfile:${logFile} truncating it`);
+    fs.closeSync(fs.openSync(logFile, 'w'));
+  }
   return new Promise((resolve, reject) => {
     const client = new SSHClient();
     client.on('error', reject);
     client
       .on('ready', () => {
-        executor(getRunCommand({ client, onUpdate })).then(resolve, reject);
+        executor(getRunCommand({ client, onUpdate, logFile })).then(resolve, reject);
       })
       .on('error', reject)
       .on('timeout', (event: any) => {

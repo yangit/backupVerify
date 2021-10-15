@@ -8,6 +8,28 @@ export interface StorageAndSnapshot {
   snapshots: string[];
 }
 
+export interface IntegrityCheckReturn {
+  storage: string;
+  files?: { count: number; totalSize: number; chunks: number };
+  lastRevision?: { number: number; created: moment.Moment };
+  revisionCount?: number;
+  revisions?: {
+    number: number;
+    created: moment.Moment;
+  }[];
+  listOk: boolean;
+  quickCheckOk: boolean;
+  chunksOk: boolean;
+  filesOk: boolean;
+  pruningOk: boolean;
+  allOk: boolean;
+  durationSec: number;
+  error?: {
+    stack: string;
+    message: string;
+  };
+}
+
 export interface ConfigRawType {
   repositoryBase: string;
   duplicacyBinary: string;
